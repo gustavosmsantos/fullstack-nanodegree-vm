@@ -1,0 +1,14 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+nav {
+    width: 300px;
+    height: 100%;
+    border: 1px solid black;
+    padding: 50px;
+    position: fixed;
+
+    background-color: rgb(3, 3, 97);
+}
