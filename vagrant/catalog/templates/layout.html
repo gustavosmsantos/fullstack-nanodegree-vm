@@ -7,7 +7,7 @@
   <h1>My catalog</h1>
   <ul>
   {% for category in find_categories() %}
-    <li>{{ category.name }}</li>
+    <li><a href="{{ url_for('list_category', category_name=category.name) }}">{{ category.name }}</a></li>
   {% endfor %}
   </ul>
 </nav>

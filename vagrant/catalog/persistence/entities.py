@@ -23,4 +23,4 @@ class Item(Base):
      category_id = Column(Integer, ForeignKey('categories.id'))
 
      def __repr__(self):
-        return "<Item(name='%s')>" % (self.name)
+        return "<Item(name='%s', description='%s')>" % (self.name, self.description)
