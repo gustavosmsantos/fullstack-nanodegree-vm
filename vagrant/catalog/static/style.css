@@ -10,5 +10,12 @@ nav {
     padding: 50px;
     position: fixed;
 
+    color: white;
+
     background-color: rgb(3, 3, 97);
+}
+
+.content {
+    margin-left: 300px;
+    padding: 20px;
 }
