@@ -4,17 +4,17 @@
 <form class="form" method="POST">
     <div class="form-group">
         <label for="name">Name</label>
-        <input type="text" class="form-control" id="name" name="name" placeholder="Enter item name">
+        <input type="text" class="form-control" id="name" name="name" placeholder="Enter item name" value="{{ item.name if item.name != None else '' }}">
     </div>
     <div class="form-group">
         <label for="description">Description</label>
-        <input type="text" class="form-control" id="description" name="description" placeholder="Enter description">
+        <input type="text" class="form-control" id="description" name="description" placeholder="Enter description" value="{{ item.description if item.description != None else '' }}">
     </div>
     <div class="form-group">
         <label for="name">Category</label>
         <select id="category" class="form-control" name="category_id">
             {% for category in categories %}
-                {% if category.name == selected %}
+                {% if category.name == item.category.name %}
                     <option value="{{category.id}}" selected>{{category.name}}</option>
                 {% else %}
                     <option value="{{category.id}}">{{category.name}}</option>

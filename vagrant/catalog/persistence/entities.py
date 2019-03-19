@@ -18,9 +18,10 @@ class Item(Base):
      __tablename__ = 'items'
 
      id = Column(Integer, primary_key=True)
-     name = Column(String, nullable=False, unique=True)
+     name = Column(String, nullable=False)
      description = Column(String, nullable=False)
      category_id = Column(Integer, ForeignKey('categories.id'))
+     category = relationship("Category")
 
      def __repr__(self):
         return "<Item(name='%s', description='%s')>" % (self.name, self.description)
