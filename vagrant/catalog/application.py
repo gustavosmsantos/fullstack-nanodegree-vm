@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, render_template, request, flash, redirect, url_for, jsonify
 from persistence.config import DbSession
 from persistence.entities import Category, Item
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
+import json
 
 app = Flask(__name__)
 app.secret_key='138323278'
@@ -88,6 +89,12 @@ def delete_item(item_name):
     except NoResultFound: 
         flash('Item not found')
         return redirect(url_for('main'))
+
+@app.route('/catalog.json', methods=['GET'])
+def json_endpoint():
+    dbSession = DbSession()
+    categories = dbSession.query(Category).all()
+    return jsonify(categories=[category.serialize for category in categories])
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

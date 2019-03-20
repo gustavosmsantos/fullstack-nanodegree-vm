@@ -10,9 +10,15 @@ class Category(Base):
 
      id = Column(Integer, primary_key=True)
      name = Column(String, unique=True)
+     items = relationship('Item')
 
-     def __repr__(self):
-        return "<Category(name='%s')>" % (self.name)
+     @property
+     def serialize(self):
+        return {
+                'id': self.id,
+                'name': self.name,
+                'items': [item.serialize for item in self.items]
+        }
 
 class Item(Base):
      __tablename__ = 'items'
@@ -21,7 +27,13 @@ class Item(Base):
      name = Column(String, nullable=False)
      description = Column(String, nullable=False)
      category_id = Column(Integer, ForeignKey('categories.id'))
-     category = relationship("Category")
+     category = relationship('Category')
 
-     def __repr__(self):
-        return "<Item(name='%s', description='%s')>" % (self.name, self.description)
+     @property
+     def serialize(self):
+        return {
+                'id': self.id,
+                'name': self.name,
+                'description': self.description,
+                'category_id': self.category.id
+        }
