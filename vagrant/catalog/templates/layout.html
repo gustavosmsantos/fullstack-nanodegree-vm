@@ -17,7 +17,7 @@
       </ul>      
       
       {% if session['name'] %}
-        <p>Hello {{session['name']}}</p>
+        <p>Logged in as {{session['name']}}</p><a href="{{ url_for('gdisconnect') }}">Logout</a></p>
       {% else %}
         <button id="signinButton">Sign in with Google</button>
       {% endif %}

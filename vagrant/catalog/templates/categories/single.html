@@ -14,12 +14,14 @@
                     <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{{item.id}}" aria-expanded="true" aria-controls="collapse{{item.id}}">
                         {{item.name}}
                     </button>
+                    {% if session['gplus_id'] == item.user_id %}
                     <div>
                         <a href="{{ url_for('edit_item', item_name=item.name) }}"><button class="btn btn-warning">Edit</button></a>
                     </div>
                     <div>
                         <a href="{{ url_for('delete_item', item_name=item.name) }}"><button class="btn btn-danger">Delete</button></a>
                     </div>
+                    {% endif %}
                 </h5>
                 </div>
                 <div id="collapse{{item.id}}" class="collapse" aria-labelledby="heading{{item.id}}" data-parent="#accordion">
@@ -31,7 +33,12 @@
         {% endfor %}
     </div>
 {% endif %}
-<a href="{{ url_for('new_item', category=category.name) }}"><button class="btn btn-primary">New item</button></a>
+
+{% if session['gplus_id'] %}
+    <a href="{{ url_for('new_item', category=category.name) }}"><button class="btn btn-primary">New item</button></a>
+{% else %}
+    <p><strong>Sign in to create items</strong></p>
+{% endif %}
 
 {% endblock %}
 

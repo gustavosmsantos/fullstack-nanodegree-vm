@@ -102,17 +102,22 @@ def gdisconnect():
         del login_session['access_token']
         del login_session['gplus_id']
         del login_session['name']
-        return json_response("Successfully disconnected", 200)
+        flash("Successfully disconnected")
     else:
-        return json_response("Failed to revoke token for given user", 400)
+        flash("Failed to revoke token for given user")
+    return redirect(url_for('main'))
 
 @app.route('/items/new', methods=['GET','POST'])
 def new_item():
+    if login_session.get('name') is None:
+        flash("Login first to create items")
+        return redirect(url_for('main'))
+
     dbSession = DbSession()
     if request.method == 'POST':
         params = validate_and_extract_form_params(request, ['name', 'description', 'category_id'])
         item = Item(name = params['name'], description = params['description'],
-            category_id = params['category_id'])
+            category_id = params['category_id'], user_id=login_session.get('gplus_id'))
         dbSession.add(item)
         dbSession.commit()
         flash('Item successfully created.')
@@ -146,6 +151,11 @@ def edit_item(item_name):
     try:
         dbSession = DbSession()
         item = dbSession.query(Item).filter_by(name=item_name).one()
+
+        if not item.user_id == login_session.get('gplus_id'):
+            flash("Not authorized to edit this item")
+            return redirect(url_for('main'))
+
         if request.method == 'POST':
             params = validate_and_extract_form_params(request, ['name', 'description', 'category_id'])
             item.name = params['name']
