@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
-import json, random, string, httplib2, requests
+import json, random, string, httplib2, requests, logging, traceback
 
 app = Flask(__name__)
 app.secret_key='138323278'
@@ -42,22 +42,23 @@ def gconnect():
     #     return json_response("Invalid state parameter.", 500)
 
     code = request.data
+    print("Actual code is: %s" % code)
 
     try:
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='openid')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError as error:
-        return json_response("Failed to upgrade the authorization code. Error %s" % str(error), 401)
+        traceback.print_exc()
+        return json_response("Failed to upgrade the authorization code. %s" % str(error), 401)
 
     access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
-           % access_token)
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' % access_token)
     h = httplib2.Http()
     result = json.loads(h.request(url, 'GET')[1])
 
     if result.get('error') is not None:
-        return json_response(json.dumps(result.get('error')), 500)
+        return json_response(result.get('error'), 500)
 
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
@@ -69,10 +70,7 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        return json_response('Current user is already connected.', 200)
 
     login_session['access_token'] = credentials.access_token
     login_session['gplus_id'] = gplus_id
@@ -83,11 +81,12 @@ def gconnect():
 
     data = answer.json()
     login_session['name'] = data['name']
-    return redirect_to(url_for('main'))
+    return redirect(url_for('main'))
 
 def json_response(message, statusCode):
-    response = make_response(json.dumps(message), statusCode)
-    print message
+    response = make_response(jsonify(message=message), statusCode)
+    if statusCode >= 400:
+        logging.error(message) 
     response.headers['Content-Type'] = 'application/json'
     return response
 
@@ -95,9 +94,7 @@ def json_response(message, statusCode):
 def gdisconnect():
     access_token = login_session.get('access_token')
     if access_token is None:
-        response = make_response(json.dumps('Current user not connected.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        return json_response("Current user not connected.", 401)
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]

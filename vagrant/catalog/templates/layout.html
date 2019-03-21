@@ -5,7 +5,6 @@
     <title>Flaskr</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}" />
-    <meta name="google-signin-client_id" content="121181442952-bkcqi4jf24iibdaag9r4cg946220qagi.apps.googleusercontent.com">
   </head>
   <body>
     <nav>
@@ -15,9 +14,13 @@
       {% for category in find_categories() %}
         <li><a href="{{ url_for('list_category', category_name=category.name) }}">{{ category.name }}</a></li>
       {% endfor %}
-      </ul>
-    
-      <div id="my-signin2"></div>
+      </ul>      
+      
+      {% if session['name'] %}
+        <p>Hello {{session['name']}}</p>
+      {% else %}
+        <button id="signinButton">Sign in with Google</button>
+      {% endif %}
     
     </nav>
     <section class="content">
@@ -34,40 +37,39 @@
   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-  <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+  <script src="https://apis.google.com/js/platform.js?onload=start" async defer></script>
   <script>
     $(document).ready (function(){
       setTimeout(function() {
         $(".alert").addClass('fade');
         $(".alert").alert('close');
       }, 2000);
+
+      $('#signinButton').click(function() {
+        auth2.grantOfflineAccess().then(onSuccess);
+      });
     });
 
     function onSuccess(googleUser) {
-      var id_token = googleUser.getAuthResponse().id_token;
+      console.log(googleUser)
       $.ajax({
         type: 'POST',
         url: '/gconnect?state={{STATE}}',
         processData: false,
         contentType: 'application/octet-stream; charset=utf-8',
-        data: id_token,
+        data: googleUser.code,
         success: function(result) {
           window.location.href = '/'
         }
       })
     }
-    function onFailure(error) {
-      console.log(error);
-    }
-    function renderButton() {
-      gapi.signin2.render('my-signin2', {
-        'scope': 'openid',
-        'width': 240,
-        'height': 50,
-        'longtitle': true,
-        'theme': 'dark',
-        'onsuccess': onSuccess,
-        'onfailure': onFailure
+
+    function start() {
+      gapi.load('auth2', function() {
+        auth2 = gapi.auth2.init({
+          client_id: '121181442952-bkcqi4jf24iibdaag9r4cg946220qagi.apps.googleusercontent.com',
+          scope: 'openid'
+        });
       });
     }
 
