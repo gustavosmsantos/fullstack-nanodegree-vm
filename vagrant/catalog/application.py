@@ -34,7 +34,7 @@ def newState():
 
 
 app.jinja_env.globals.update(find_categories=find_categories)
-app.jinja_env.globals.update(STATE=newState)
+app.jinja_env.globals.update(newState=newState)
 
 
 @app.route('/', methods=['GET'])
@@ -49,9 +49,8 @@ def showLogin():
 # Authentication strongly inspired in lesson's code
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    # TODO failing for now
-    # if request.args.get('state') != login_session['state']:
-    #     return json_response("Invalid state parameter.", 500)
+    if request.args.get('state') != login_session['state']:
+        return json_response("Invalid state parameter.", 500)
 
     code = request.data
     print("Actual code is: %s" % code)
