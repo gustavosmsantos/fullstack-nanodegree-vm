@@ -12,12 +12,22 @@ import httplib2
 import requests
 import logging
 import traceback
+import os
 
 app = Flask(__name__)
 app.secret_key = '138323278'
 
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
     'web']['client_id']
+
+if CLIENT_ID is None:
+    raise Exception("File client_secrets.json should be provided in root")
+
+google_client_id = os.getenv("G_CLIENT_ID")
+
+if google_client_id is None:
+    raise Exception(
+        "Environment G_CLIENT_ID should provide the Google client id.")
 
 
 def find_categories():
@@ -35,6 +45,7 @@ def newState():
 
 app.jinja_env.globals.update(find_categories=find_categories)
 app.jinja_env.globals.update(newState=newState)
+app.jinja_env.globals.update(google_client_id=google_client_id)
 
 
 @app.route('/', methods=['GET'])

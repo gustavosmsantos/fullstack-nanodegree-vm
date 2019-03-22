@@ -67,7 +67,7 @@
     function start() {
       gapi.load('auth2', function() {
         auth2 = gapi.auth2.init({
-          client_id: '121181442952-bkcqi4jf24iibdaag9r4cg946220qagi.apps.googleusercontent.com',
+          client_id: '{{google_client_id}}.apps.googleusercontent.com',
           scope: 'openid'
         });
       });
