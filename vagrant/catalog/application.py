@@ -5,17 +5,26 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
-import json, random, string, httplib2, requests, logging, traceback
+import json
+import random
+import string
+import httplib2
+import requests
+import logging
+import traceback
 
 app = Flask(__name__)
-app.secret_key='138323278'
+app.secret_key = '138323278'
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
+    'web']['client_id']
+
 
 def find_categories():
-    dbSession = DbSession() 
+    dbSession = DbSession()
     categories = dbSession.query(Category).all()
     return categories
+
 
 def newState():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -23,18 +32,21 @@ def newState():
     login_session['state'] = state
     return state
 
+
 app.jinja_env.globals.update(find_categories=find_categories)
 app.jinja_env.globals.update(STATE=newState)
+
 
 @app.route('/', methods=['GET'])
 def main():
     return render_template("home.html")
 
+
 @app.route('/login')
 def showLogin():
     return render_template("login.html")
 
-#Authentication strongly inspired in lesson's code
+# Authentication strongly inspired in lesson's code
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # TODO failing for now
@@ -45,15 +57,20 @@ def gconnect():
     print("Actual code is: %s" % code)
 
     try:
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='openid')
+        oauth_flow = flow_from_clientsecrets(
+            'client_secrets.json', scope='openid')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError as error:
         traceback.print_exc()
-        return json_response("Failed to upgrade the authorization code. %s" % str(error), 401)
+        return json_response(
+            "Failed to upgrade the authorization code. %s" %
+            str(error), 401)
 
     access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' % access_token)
+    url = (
+        'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %
+        access_token)
     h = httplib2.Http()
     result = json.loads(h.request(url, 'GET')[1])
 
@@ -62,7 +79,8 @@ def gconnect():
 
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
-        return json_response("Token's user ID doesn't match given user ID.", 401)
+        return json_response(
+            "Token's user ID doesn't match given user ID.", 401)
 
     if result['issued_to'] != CLIENT_ID:
         return json_response("Token's client ID does not match app's.", 401)
@@ -83,12 +101,14 @@ def gconnect():
     login_session['name'] = data['name']
     return redirect(url_for('main'))
 
+
 def json_response(message, statusCode):
     response = make_response(jsonify(message=message), statusCode)
     if statusCode >= 400:
-        logging.error(message) 
+        logging.error(message)
     response.headers['Content-Type'] = 'application/json'
     return response
+
 
 @app.route('/gdisconnect')
 def gdisconnect():
@@ -107,7 +127,8 @@ def gdisconnect():
         flash("Failed to revoke token for given user")
     return redirect(url_for('main'))
 
-@app.route('/items/new', methods=['GET','POST'])
+
+@app.route('/items/new', methods=['GET', 'POST'])
 def new_item():
     if login_session.get('name') is None:
         flash("Login first to create items")
@@ -115,36 +136,55 @@ def new_item():
 
     dbSession = DbSession()
     if request.method == 'POST':
-        params = validate_and_extract_form_params(request, ['name', 'description', 'category_id'])
-        item = Item(name = params['name'], description = params['description'],
-            category_id = params['category_id'], user_id=login_session.get('gplus_id'))
+        params = validate_and_extract_form_params(
+            request, ['name', 'description', 'category_id'])
+        item = Item(
+            name=params['name'],
+            description=params['description'],
+            category_id=params['category_id'],
+            user_id=login_session.get('gplus_id'))
         dbSession.add(item)
         dbSession.commit()
         flash('Item successfully created.')
-        return redirect(url_for('list_category', category_name=item.category.name))
+        return redirect(
+            url_for(
+                'list_category',
+                category_name=item.category.name))
 
     selected_category = request.args.get('category')
-    return render_template('items/new.html', categories=find_categories(), item=Item(category=Category(name = selected_category)))
+    return render_template(
+        'items/new.html',
+        categories=find_categories(),
+        item=Item(
+            category=Category(
+                name=selected_category)))
+
 
 def validate_and_extract_form_params(request, params):
     final_params = {}
     for param_name in params:
         form_value = request.form.get(param_name)
-        if form_value == None:
+        if form_value is None:
             raise Exception('Missing required param: %s' % param_name)
         final_params[param_name] = form_value
     return final_params
+
 
 @app.route('/categories/<category_name>', methods=['GET'])
 def list_category(category_name):
     dbSession = DbSession()
     try:
-        category = dbSession.query(Category).filter_by(name=category_name).one()
-        items = dbSession.query(Item).filter_by(category_id = category.id).all()
-        return render_template('categories/single.html', items=items, category=category)
+        category = dbSession.query(Category).filter_by(
+            name=category_name).one()
+        items = dbSession.query(Item).filter_by(category_id=category.id).all()
+        return render_template(
+            'categories/single.html',
+            items=items,
+            category=category)
     except NoResultFound:
         flash('Category not found')
         return redirect(url_for('main'))
+
 
 @app.route('/catalog/<item_name>/edit', methods=['GET', 'POST'])
 def edit_item(item_name):
@@ -157,41 +197,56 @@ def edit_item(item_name):
             return redirect(url_for('main'))
 
         if request.method == 'POST':
-            params = validate_and_extract_form_params(request, ['name', 'description', 'category_id'])
+            params = validate_and_extract_form_params(
+                request, ['name', 'description', 'category_id'])
             item.name = params['name']
             item.description = params['description']
             item.category_id = params['category_id']
             dbSession.add(item)
             dbSession.commit()
             flash('Item successfully updated')
-            return redirect(url_for('list_category', category_name=item.category.name))
-        return render_template('items/new.html', categories=find_categories(), item=item)
-    except NoResultFound: 
+            return redirect(
+                url_for(
+                    'list_category',
+                    category_name=item.category.name))
+        return render_template(
+            'items/new.html',
+            categories=find_categories(),
+            item=item)
+    except NoResultFound:
         flash('Item not found')
         return redirect(url_for('main'))
+
 
 @app.route('/catalog/<item_name>/delete', methods=['GET', 'POST'])
 def delete_item(item_name):
     try:
         dbSession = DbSession()
-        item = dbSession.query(Item).filter_by(name=item_name).options(joinedload('category')).one()
+        item = dbSession.query(Item).filter_by(
+            name=item_name).options(
+            joinedload('category')).one()
         if request.method == 'POST':
             dbSession.delete(item)
             dbSession.commit()
             flash('Item successfully deleted')
-            return redirect(url_for('list_category', category_name=item.category.name))
+            return redirect(
+                url_for(
+                    'list_category',
+                    category_name=item.category.name))
 
         return render_template('items/delete.html', item=item)
 
-    except NoResultFound: 
+    except NoResultFound:
         flash('Item not found')
         return redirect(url_for('main'))
+
 
 @app.route('/catalog.json', methods=['GET'])
 def json_endpoint():
     dbSession = DbSession()
     categories = dbSession.query(Category).all()
     return jsonify(categories=[category.serialize for category in categories])
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
