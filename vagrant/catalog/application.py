@@ -235,6 +235,11 @@ def delete_item(item_name):
         item = dbSession.query(Item).filter_by(
             name=item_name).options(
             joinedload('category')).one()
+
+        if not item.user_id == login_session.get('gplus_id'):
+            flash("Not authorized to edit this item")
+            return redirect(url_for('main'))
+
         if request.method == 'POST':
             dbSession.delete(item)
             dbSession.commit()
