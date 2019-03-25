@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, jsonify, session as login_session, make_response
+from flask import Flask, render_template, request, flash, redirect
+from flask import url_for, jsonify, session as login_session, make_response
 from persistence.config import DbSession
 from persistence.entities import Category, Item
 from sqlalchemy.orm import joinedload
@@ -30,17 +31,22 @@ if google_client_id is None:
         "Environment G_CLIENT_ID should provide the Google client id.")
 
 # Find all categories, used in layout
+
+
 def find_categories():
     dbSession = DbSession()
     categories = dbSession.query(Category).all()
     return categories
 
 # Generates token to prevent CSRF attacks
+
+
 def newState():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
     return state
+
 
 app.jinja_env.globals.update(find_categories=find_categories)
 app.jinja_env.globals.update(newState=newState)
@@ -110,6 +116,8 @@ def gconnect():
     return redirect(url_for('main'))
 
 # utilitary method that formats the output in json format
+
+
 def json_response(message, statusCode):
     response = make_response(jsonify(message=message), statusCode)
     if statusCode >= 400:
@@ -123,9 +131,9 @@ def gdisconnect():
     access_token = login_session.get('access_token')
     if access_token is None:
         return json_response("Current user not connected.", 401)
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s'
     h = httplib2.Http()
-    result = h.request(url, 'GET')[0]
+    result = h.request(url % login_session['access_token'], 'GET')[0]
     if result['status'] == '200':
         del login_session['access_token']
         del login_session['gplus_id']
@@ -169,6 +177,8 @@ def new_item():
                 name=selected_category)))
 
 # utilitary function to validate request inputs
+
+
 def validate_and_extract_form_params(request, params):
     final_params = {}
     for param_name in params:
@@ -194,15 +204,18 @@ def list_category(category_name):
         flash('Category not found')
         return redirect(url_for('main'))
 
+
 @app.route('/categories/<category_name>/items/<item_name>', methods=['GET'])
 def item_info(category_name, item_name):
     dbSession = DbSession()
     try:
-        category = dbSession.query(Category).filter_by(name=category_name).one()
+        category = dbSession.query(Category).filter_by(
+            name=category_name).one()
     except NoResultFound:
         return json_response("category not found", 404)
     try:
-        item = dbSession.query(Item).filter_by(category_id=category.id, name=item_name).one()
+        item = dbSession.query(Item).filter_by(
+            category_id=category.id, name=item_name).one()
         return jsonify(item.serialize)
     except NoResultFound:
         return json_response("item not found", 404)
