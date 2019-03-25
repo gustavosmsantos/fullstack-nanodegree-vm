@@ -194,6 +194,19 @@ def list_category(category_name):
         flash('Category not found')
         return redirect(url_for('main'))
 
+@app.route('/categories/<category_name>/items/<item_name>', methods=['GET'])
+def item_info(category_name, item_name):
+    dbSession = DbSession()
+    try:
+        category = dbSession.query(Category).filter_by(name=category_name).one()
+    except NoResultFound:
+        return json_response("category not found", 404)
+    try:
+        item = dbSession.query(Item).filter_by(category_id=category.id, name=item_name).one()
+        return jsonify(item.serialize)
+    except NoResultFound:
+        return json_response("item not found", 404)
+
 # Controller that allows to edit an item that the logged user owns
 @app.route('/catalog/<item_name>/edit', methods=['GET', 'POST'])
 def edit_item(item_name):
