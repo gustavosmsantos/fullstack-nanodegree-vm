@@ -30,18 +30,16 @@ if google_client_id is None:
     raise Exception(
         "Environment G_CLIENT_ID should provide the Google client id.")
 
-# Find all categories, used in layout
-
 
 def find_categories():
+    """Find all categories, used in layout"""
     dbSession = DbSession()
     categories = dbSession.query(Category).all()
     return categories
 
-# Generates token to prevent CSRF attacks
-
 
 def newState():
+    """Generates token to prevent CSRF attacks"""
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
@@ -52,14 +50,16 @@ app.jinja_env.globals.update(find_categories=find_categories)
 app.jinja_env.globals.update(newState=newState)
 app.jinja_env.globals.update(google_client_id=google_client_id)
 
-# Main route
+
 @app.route('/', methods=['GET'])
 def main():
+    """Main route"""
     return render_template("home.html")
 
-# Authentication strongly inspired in lesson's code
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Authentication strongly inspired in lesson's code"""
     # prevents CSRF validating server-side generated token
     if request.args.get('state') != login_session['state']:
         return json_response("Invalid state parameter.", 500)
@@ -115,19 +115,19 @@ def gconnect():
     login_session['name'] = data['name']
     return redirect(url_for('main'))
 
-# utilitary method that formats the output in json format
-
 
 def json_response(message, statusCode):
+    """utilitary method that formats the output in json format"""
     response = make_response(jsonify(message=message), statusCode)
     if statusCode >= 400:
         logging.error(message)
     response.headers['Content-Type'] = 'application/json'
     return response
 
-# ivalidates the token in google server.
+
 @app.route('/gdisconnect')
 def gdisconnect():
+    """validates the token in google server"""
     access_token = login_session.get('access_token')
     if access_token is None:
         return json_response("Current user not connected.", 401)
@@ -144,9 +144,9 @@ def gdisconnect():
     return redirect(url_for('main'))
 
 
-# creates a new item, available if user is logged in
 @app.route('/items/new', methods=['GET', 'POST'])
 def new_item():
+    """ creates a new item, available if user is logged in"""
     if login_session.get('name') is None:
         flash("Login first to create items")
         return redirect(url_for('main'))
@@ -176,10 +176,9 @@ def new_item():
             category=Category(
                 name=selected_category)))
 
-# utilitary function to validate request inputs
-
 
 def validate_and_extract_form_params(request, params):
+    """utilitary function to validate request inputs"""
     final_params = {}
     for param_name in params:
         form_value = request.form.get(param_name)
@@ -188,9 +187,10 @@ def validate_and_extract_form_params(request, params):
         final_params[param_name] = form_value
     return final_params
 
-# Controller that lists all items from category
+
 @app.route('/categories/<category_name>', methods=['GET'])
 def list_category(category_name):
+    """Controller that lists all items from category"""
     dbSession = DbSession()
     try:
         category = dbSession.query(Category).filter_by(
@@ -220,9 +220,10 @@ def item_info(category_name, item_name):
     except NoResultFound:
         return json_response("item not found", 404)
 
-# Controller that allows to edit an item that the logged user owns
+
 @app.route('/catalog/<item_name>/edit', methods=['GET', 'POST'])
 def edit_item(item_name):
+    """Controller that allows to edit an item that the logged user owns"""
     try:
         dbSession = DbSession()
         item = dbSession.query(Item).filter_by(name=item_name).one()
@@ -252,9 +253,10 @@ def edit_item(item_name):
         flash('Item not found')
         return redirect(url_for('main'))
 
-# Controller that allows to delete an item that the logged user owns
+
 @app.route('/catalog/<item_name>/delete', methods=['GET', 'POST'])
 def delete_item(item_name):
+    """Controller that allows to delete an item that the logged user owns"""
     try:
         dbSession = DbSession()
         item = dbSession.query(Item).filter_by(
@@ -280,9 +282,10 @@ def delete_item(item_name):
         flash('Item not found')
         return redirect(url_for('main'))
 
-# Provides the list of all categories
+
 @app.route('/catalog.json', methods=['GET'])
 def json_endpoint():
+    """Provides the list of all categories"""
     dbSession = DbSession()
     categories = dbSession.query(Category).all()
     return jsonify(categories=[category.serialize for category in categories])
